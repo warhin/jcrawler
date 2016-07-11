@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
@@ -61,7 +62,7 @@ public class Site {
 	private int timeout;
 	
 	/**
-	 * 对该site抓取频率的控制，指定每次请求该site后休眠间隙(是否需要提供随机sleeptime生成器接口？)
+	 * 对该site抓取频率的控制，指定每次请求该site后休眠间隙
 	 */
 	private long sleepTime;
 	
@@ -141,15 +142,40 @@ public class Site {
 		return this.timeout;
 	}
 	
+	/**
+	 * 由用户设置该site的sleepTime时长
+	 * 
+	 * @param sleepTime 用户可以显式设置sleepTime为0，表示该site没有反爬虫策略，爬虫线程不需要暂停
+	 * @return Site for chain invoke
+	 */
 	public Site sleepTime(long sleepTime) {
-		if (sleepTime >= 0) {	// 用户可以显式设置sleepTime为0，表示该site没有反爬虫策略，爬虫线程不需要暂停
+		if (sleepTime >= 0) {
 			this.sleepTime = sleepTime;
 		}
 		return this;
 	}
 	
+	/**
+	 * 该方法与sleepTimeRandom()方法是互斥的，调用一个即可。
+	 * 
+	 * @return 返回由用户设置的该site的sleepTime时长，可以是0，可以是一个固定值
+	 */
 	public long sleepTime() {
 		return this.sleepTime;
+	}
+	
+	private Random random = new Random();
+
+	/**
+	 * 该方法提供随机sleeptime，返回一个介于0到指定sleeptime之间的数值。
+	 * 
+	 * 该方法与sleepTime()方法是互斥的，调用一个即可。
+	 * 
+	 * @return 返回一个介于0到指定sleeptime之间的数值
+	 */
+	public long sleepTimeRandom() {
+		long sleepTimeSeed = sleepTime > 0 ? sleepTime : Envirenment.DEFAULT_CRAWLER_PAUSEMILLS;
+		return random.nextInt((int) sleepTimeSeed);
 	}
 	
 	// ------------------------------ headers set and get ------------------------------

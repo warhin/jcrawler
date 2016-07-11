@@ -52,6 +52,7 @@ public class PriorityRequestHolder implements RequestHolder {
 			return requestQueue.poll(Envirenment.DEFAULT_REQUEST_PULL_TIMEOUT, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
 			logger.error("couldn't pull request from request queue!", e);
+			Thread.currentThread().interrupt();
 		}
 		return null;
 	}
@@ -82,6 +83,7 @@ public class PriorityRequestHolder implements RequestHolder {
 				}
 			} catch (InterruptedException e) {
 				logger.error("couldn't push request to request queue!", e);
+				Thread.currentThread().interrupt();
 			}
 		}
 		return pushSuccess;
