@@ -26,6 +26,7 @@ import jcrawler.fetcher.HttpFetcherFactory;
 /**
  * JCrawler爬虫框架入口类
  * 
+ * 
  * @author warhin.wang
  *
  */
@@ -172,7 +173,7 @@ public class JCrawler implements Runnable {
 		return this;
 	}
 	
-	public void init() {
+	private void init() {
 		// 必须设置项，未设置将抛出JCrawlerException
 		if (this.sites.isEmpty() && this.requestSuplier == null) {
 			throw new JCrawlerException("Not specified startRequests from nither sites nor requestSuplier");
@@ -206,18 +207,35 @@ public class JCrawler implements Runnable {
 				this.requestHolder.push(startRequest);
 			}
 		}
+		// init requestSuplier/fetcher/extractor
+		this.init(this.requestSuplier).init(this.fetcher).init(this.extractor);
+		// init exporter
+		for (Exporter exporter : this.exporters) {
+			init(exporter);
+		}
 		this.status(Status.RUNNING);
 		logger.info("start jcrawler at : {}", start = System.currentTimeMillis());
 	}
+	
+	public JCrawler init(Object object) {
+		if (object == null)
+			return this;
+		if (object instanceof Initializable) {
+			Initializable i = (Initializable) object;
+			try {
+				i.init();
+				logger.info("init {}", i);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return this;
+	}
 
-	public void close() {
+	private void close() {
 		this.status(Status.STOPPED);
-		// close requestSuplier
-		close(this.requestSuplier);
-		// close fetcher
-		close(this.fetcher);
-		// close extractor
-		close(this.extractor);
+		// close requestSuplier/fetcher/extractor
+		this.close(this.requestSuplier).close(this.fetcher).close(this.extractor);
 		// close exporter
 		for (Exporter exporter : this.exporters) {
 			close(exporter);
@@ -239,16 +257,28 @@ public class JCrawler implements Runnable {
 		}
 	}
 	
-	public void close(Object object) {
-		if (object == null || !(object instanceof Closeable))
-			return;
-		Closeable o = (Closeable) object;
-		try {
-			o.close();
-			logger.info("close {}", o);
-		} catch (IOException e) {
-			e.printStackTrace();
+	public JCrawler close(Object object) {
+		if (object == null)
+			return this;
+		if (object instanceof Closeable) {
+			Closeable o = (Closeable) object;
+			try {
+				o.close();
+				logger.info("close {}", o);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
+		if (object instanceof Disposable) {
+			Disposable d = (Disposable) object;
+			try {
+				d.destroy();
+				logger.info("dipose {}", d);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return this;
 	}
 
 	@Override
