@@ -11,14 +11,6 @@
 	<artifactId>jcrawler-core</artifactId>
 	<name>jcrawler-core</name>
 	<url>http://maven.apache.org</url>
-	
-	<repositories>
-		<repository>
-			<id>nexus</id>
-			<name>Team Nexus Repository</name>
-			<url>http://115.28.26.82:8888/nexus/content/groups/public</url>
-		</repository>
-	</repositories>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -32,7 +24,6 @@
 			<groupId>fisher</groupId>
 			<artifactId>fisher-parser</artifactId>
 			<version>0.1.0-SNAPSHOT</version>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>

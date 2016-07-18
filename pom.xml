@@ -7,19 +7,9 @@
 	<version>1.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>jcrawler-parent</name>
-	
-	<repositories>
-		<repository>
-			<id>nexus</id>
-			<name>Team Nexus Repository</name>
-			<url>http://115.28.26.82:8888/nexus/content/groups/public</url>
-		</repository>
-	</repositories>
 
 	<modules>
-		<module>jcrawler-common</module>
 		<module>jcrawler-core</module>
-		<module>jcrawler-app</module>
 	</modules>
 
 	<properties>
