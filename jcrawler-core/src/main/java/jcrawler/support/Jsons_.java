@@ -2,27 +2,41 @@ package jcrawler.support;
 
 import java.io.IOException;
 
+import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.JsonParser.Feature;
 import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
 
 public class Jsons_ {
-	
+
+	private static volatile ObjectMapper objectMapper;
+
+	public static ObjectMapper getObjectMapper() {
+		if (objectMapper == null) {
+			synchronized (Jsons_.class) {
+				if (objectMapper == null) {
+					JsonFactory jsonFactory = new JsonFactory();
+					jsonFactory.enable(Feature.ALLOW_UNQUOTED_CONTROL_CHARS);
+					objectMapper = new ObjectMapper(jsonFactory);
+				}
+			}
+		}
+		return objectMapper;
+	}
+
 	public static String toString(Object object) {
 		return toString(object, true);
 	}
-	
-	@SuppressWarnings("deprecation")
-	public static String toString(Object object, boolean remainNull) {
+
+	public static String toString(Object object, boolean pretty) {
+		String result = null;
 		try {
-			ObjectMapper mapper = new ObjectMapper();
-			if (!remainNull) {
-				mapper.getSerializationConfig().disable(SerializationConfig.Feature.WRITE_NULL_PROPERTIES);
-			}
-			return mapper.writeValueAsString(object);
+			ObjectMapper mapper = getObjectMapper();
+			result = pretty ? mapper.writerWithDefaultPrettyPrinter().writeValueAsString(object)
+					: mapper.writeValueAsString(object);
 		} catch (JsonGenerationException e) {
 			e.printStackTrace();
 		} catch (JsonMappingException e) {
@@ -30,14 +44,13 @@ public class Jsons_ {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return null;
+		return result;
 	}
-	
-	public static JsonNode toNode(String input) {
+
+	public static JsonNode toJsonNode(String content) {
 		JsonNode node = null;
 		try {
-			ObjectMapper mapper = new ObjectMapper();
-			node = mapper.readTree(input);
+			node = getObjectMapper().readTree(content);
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -45,12 +58,11 @@ public class Jsons_ {
 		}
 		return node;
 	}
-	
+
 	public static <T> T toObject(String input, Class<T> clazz) {
 		T object = null;
 		try {
-			ObjectMapper mapper = new ObjectMapper();
-			object = mapper.readValue(input, clazz);
+			object = getObjectMapper().readValue(input, clazz);
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
