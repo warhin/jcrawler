@@ -223,9 +223,9 @@ public class Response extends Message {
 
 	@Override
 	public String toString() {
-		String contentToUse = (rawContent == null) ? null
+		/*String contentToUse = (rawContent == null) ? null
 				: (rawContent.length() < 500) ? rawContent
-						: new StringBuffer(StringUtils.substring(rawContent, 0, 500)).append("...").toString();
+						: new StringBuffer(StringUtils.substring(rawContent, 0, 500)).append("...").toString();*/
 		return MoreObjects.toStringHelper(this)
 				.add("site", site.name())
 				.add("url", url)
@@ -233,7 +233,7 @@ public class Response extends Message {
 //				.add("headers", headers)
 				.add("statusCode", statusCode)
 				.add("statusMessage", statusMessage)
-				.add("rawContent", contentToUse)
+//				.add("rawContent", contentToUse)
 				.add("charset", charset)
 				.add("ext", ext)
 				.toString();

@@ -1,21 +1,26 @@
 package jcrawler;
 
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIUtils;
 
 import com.google.common.base.MoreObjects;
 
-public class PageLinks extends LinkedList<Request> {
+public class PageLinks implements Serializable {
 
 	private static final long serialVersionUID = -4806044904207439543L;
 	
 	private Page page;
+	
+	private List<Request> links = new LinkedList<Request>();
 	
 	private boolean skip;
 
@@ -36,12 +41,39 @@ public class PageLinks extends LinkedList<Request> {
 		this.skip = skip;
 		return this;
 	}
+	
+	public PageLinks add(Request request) {
+		this.links.add(request);
+		return this;
+	}
+	
+	public PageLinks addAll(Collection<Request> requests) {
+		this.links.addAll(requests);
+		return this;
+	}
+	
+	public boolean remove(Request request) {
+		return this.links.remove(request);
+	}
+	
+	public boolean removeAll(Collection<Request> requests) {
+		return this.links.removeAll(requests);
+	}
+
+	public List<Request> getLinks() {
+		return this.links;
+	}
+
+	public PageLinks setLinks(List<Request> links) {
+		this.links.addAll(links);
+		return this;
+	}
 
 	public PageLinks filter() {
-		for (Request request : this) {
+		for (Request request : this.links) {
 			try {
 				if (!validate(page.url().toURI(), request.url2str())) {
-					this.remove(request);
+					this.links.remove(request);
 				}
 			} catch (URISyntaxException e) {
 				e.printStackTrace();
@@ -111,8 +143,7 @@ public class PageLinks extends LinkedList<Request> {
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(this).add("page", page).add("links", this.toArray(new PageLinks[this.size()]))
-				.add("skip", skip).toString();
+		return MoreObjects.toStringHelper(this).add("links", this.links).add("skip", skip).toString();
 	}
 
 }

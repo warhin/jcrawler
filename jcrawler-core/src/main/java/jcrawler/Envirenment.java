@@ -5,7 +5,12 @@ public class Envirenment {
 	/**
 	 * RequestHolder默认存储的request最大量
 	 */
-	public static final int DEFAULT_REQUEST_THRESHOLDS = 100000;
+	public static final int DEFAULT_REQUEST_THRESHOLDS = 10000;
+	
+	/**
+	 * PageHolder默认存储的page最大量
+	 */
+	public static final int DEFAULT_PAGE_THRESHOLDS = 1000;
 	
 	/**
 	 * RequestHolder push request时等待时长，超过该值push失败将放弃，单位ms

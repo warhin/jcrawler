@@ -34,20 +34,18 @@ public class QueuePageHolder implements PageHolder {
 		}
 		// push page对象到page队列中
 		boolean pushSuccess = false;
-		synchronized (this) {
-			try {
-				pushSuccess = pageQueue.offer(page, Envirenment.DEFAULT_PAGE_PUSH_TIMEOUT, TimeUnit.MILLISECONDS);
-				if (pushSuccess) {
-					// 在JCrawler处于SERVER模式时，该计数器的作用可忽略。为避免数值溢出，达到Long型上限时清零。
-					if (pageCounter.get() >= Long.MAX_VALUE) {
-						pageCounter.set(0);
-					}
-					pageCounter.incrementAndGet();
+		try {
+			pushSuccess = pageQueue.offer(page, Envirenment.DEFAULT_PAGE_PUSH_TIMEOUT, TimeUnit.MILLISECONDS);
+			if (pushSuccess) {
+				// 在JCrawler处于SERVER模式时，该计数器的作用可忽略。为避免数值溢出，达到Long型上限时清零。
+				if (pageCounter.get() >= Long.MAX_VALUE) {
+					pageCounter.set(0);
 				}
-			} catch (InterruptedException e) {
-				logger.error("couldn't push page to page queue!", e);
-				Thread.currentThread().interrupt();
+				pageCounter.incrementAndGet();
 			}
+		} catch (InterruptedException e) {
+			logger.error("couldn't push page to page queue!", e);
+//			Thread.currentThread().interrupt();
 		}
 		return pushSuccess;
 	}
@@ -59,7 +57,7 @@ public class QueuePageHolder implements PageHolder {
 			return pageQueue.poll(Envirenment.DEFAULT_PAGE_PULL_TIMEOUT, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
 			logger.error("couldn't pull page from page queue!", e);
-			Thread.currentThread().interrupt();
+//			Thread.currentThread().interrupt();
 		}
 		return null;
 	}

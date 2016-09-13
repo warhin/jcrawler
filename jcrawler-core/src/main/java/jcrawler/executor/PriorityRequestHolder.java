@@ -47,17 +47,6 @@ public class PriorityRequestHolder implements RequestHolder {
 	}
 
 	@Override
-	public Request pull() {
-		try {
-			return requestQueue.poll(Envirenment.DEFAULT_REQUEST_PULL_TIMEOUT, TimeUnit.MILLISECONDS);
-		} catch (InterruptedException e) {
-			logger.error("couldn't pull request from request queue!", e);
-			Thread.currentThread().interrupt();
-		}
-		return null;
-	}
-
-	@Override
 	public boolean push(Request request) {
 		// 验证request对象
 		if (request == null || !request.validate()) {
@@ -71,7 +60,7 @@ public class PriorityRequestHolder implements RequestHolder {
 		}
 		// push request对象到request队列中
 		boolean pushSuccess = false;
-		synchronized (this) {
+//		synchronized (this) {
 			try {
 				pushSuccess = requestQueue.offer(request, Envirenment.DEFAULT_REQUEST_PUSH_TIMEOUT, TimeUnit.MILLISECONDS);
 				if (pushSuccess) {
@@ -83,10 +72,21 @@ public class PriorityRequestHolder implements RequestHolder {
 				}
 			} catch (InterruptedException e) {
 				logger.error("couldn't push request to request queue!", e);
-				Thread.currentThread().interrupt();
+//				Thread.currentThread().interrupt();
 			}
-		}
+//		}
 		return pushSuccess;
+	}
+
+	@Override
+	public Request pull() {
+		try {
+			return requestQueue.poll(Envirenment.DEFAULT_REQUEST_PULL_TIMEOUT, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException e) {
+			logger.error("couldn't pull request from request queue!", e);
+//			Thread.currentThread().interrupt();
+		}
+		return null;
 	}
 
 	@Override

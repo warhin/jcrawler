@@ -77,16 +77,16 @@ public class Page {
 	// ------------------------------ page items set and get ------------------------------
 	
 	public Page addPageItem(String key, Object value) {
-		this.pageItems.put(key, value);
+		this.pageItems.push(key, value);
 		return this;
 	}
 	
 	public Object getPageItem(String key) {
-		return this.pageItems.get(key);
+		return this.pageItems.pull(key);
 	}
 	
 	public Map<String, Object> getPageItems() {
-		return this.pageItems;
+		return this.pageItems.pull();
 	}
 	
 	public Page skipPageItems(boolean skip) {
@@ -133,7 +133,7 @@ public class Page {
 	}
 	
 	public List<Request> getPageLinks() {
-		return this.pageLinks;
+		return this.pageLinks.getLinks();
 	}
 	
 	public Page skipPageLinks(boolean skip) {
@@ -180,8 +180,8 @@ public class Page {
 		return MoreObjects.toStringHelper(this)
 				.add("request", request)
 				.add("response", response)
-				.add("pageItems", pageItems)
-				.add("pageLinks", pageLinks)
+				.add("pageItems.size", pageItems.getItemMap().size())
+				.add("pageLinks.size", pageLinks.getLinks().size())
 				.toString();
 	}
 	

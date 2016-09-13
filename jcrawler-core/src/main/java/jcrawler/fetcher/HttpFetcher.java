@@ -62,7 +62,7 @@ public class HttpFetcher implements Fetcher {
 			logger.error("Couldn't retrive response of url[{}].", request.url2str(), e);
 			throw new FetchException(e);
 		} catch (IOException e) {
-			logger.error("Couldn't retrive response of url[].", request.url2str(), e);
+			logger.error("Couldn't retrive response of url[{}].", request.url2str(), e);
 		}
 		return response;
 	}

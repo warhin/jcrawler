@@ -38,17 +38,6 @@ public class QueueRequestHolder implements RequestHolder {
 	}
 
 	@Override
-	public Request pull() {
-		try {
-			return requestQueue.poll(Envirenment.DEFAULT_REQUEST_PULL_TIMEOUT, TimeUnit.MILLISECONDS);
-		} catch (InterruptedException e) {
-			logger.error("couldn't pull request from request queue!", e);
-			Thread.currentThread().interrupt();
-		}
-		return null;
-	}
-
-	@Override
 	public boolean push(Request request) {
 		// 验证request对象
 		if (request == null || !request.validate()) {
@@ -62,22 +51,31 @@ public class QueueRequestHolder implements RequestHolder {
 		}
 		// push request对象到request队列中
 		boolean pushSuccess = false;
-		synchronized (this) {
-			try {
-				pushSuccess = requestQueue.offer(request, Envirenment.DEFAULT_REQUEST_PUSH_TIMEOUT, TimeUnit.MILLISECONDS);
-				if (pushSuccess) {
-					// 在JCrawler处于SERVER模式时，该计数器的作用可忽略。为避免数值溢出，达到Long型上限时清零。
-					if (counter.get() >= Long.MAX_VALUE) {
-						counter.set(0);
-					}
-					counter.incrementAndGet();
+		try {
+			pushSuccess = requestQueue.offer(request, Envirenment.DEFAULT_REQUEST_PUSH_TIMEOUT, TimeUnit.MILLISECONDS);
+			if (pushSuccess) {
+				// 在JCrawler处于SERVER模式时，该计数器的作用可忽略。为避免数值溢出，达到Long型上限时清零。
+				if (counter.get() >= Long.MAX_VALUE) {
+					counter.set(0);
 				}
-			} catch (InterruptedException e) {
-				logger.error("couldn't push request to request queue!", e);
-				Thread.currentThread().interrupt();
+				counter.incrementAndGet();
 			}
+		} catch (InterruptedException e) {
+			logger.error("couldn't push request to request queue!", e);
+//			Thread.currentThread().interrupt();
 		}
 		return pushSuccess;
+	}
+
+	@Override
+	public Request pull() {
+		try {
+			return requestQueue.poll(Envirenment.DEFAULT_REQUEST_PULL_TIMEOUT, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException e) {
+			logger.error("couldn't pull request from request queue!", e);
+//			Thread.currentThread().interrupt();
+		}
+		return null;
 	}
 
 	@Override
