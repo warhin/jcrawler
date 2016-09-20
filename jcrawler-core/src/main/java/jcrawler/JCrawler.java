@@ -229,7 +229,8 @@ public class JCrawler implements Runnable {
 		}
 		// 管理初始化requests
 		for (Site siteToUse : this.sites) {
-			for (Request startRequest : siteToUse.getStartRequests()) {
+			List<Request> startRequests = siteToUse.getStartRequests();
+			for (Request startRequest : startRequests) {
 				this.requestHolder.push(startRequest);
 			}
 		}

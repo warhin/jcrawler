@@ -46,7 +46,7 @@ public class QueueRequestHolder implements RequestHolder {
 		}
 		// 验证reserver策略
 		if (reserver != null && !reserver.reserve(request)) {
-			logger.warn("the reserver passed the request {}", request);
+			logger.warn("the reserver passed the duplicated request {}", request);
 			return false;
 		}
 		// push request对象到request队列中

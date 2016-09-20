@@ -247,16 +247,18 @@ public class Request extends Message {
 			buffer.append(in.getQuery());
 			first = false;
 		}
-		for (Map.Entry<String, String> entry : this.data.entrySet()) {
-			if (!first)
-				buffer.append('&');
-			else
-				first = false;
-			try {
-				buffer.append(URLEncoder.encode(entry.getKey(), Charsets.UTF_8.toString())).append('=')
-						.append(URLEncoder.encode(entry.getValue(), Charsets.UTF_8.toString()));
-			} catch (UnsupportedEncodingException e) {
-				buffer.append(entry.getKey()).append('=').append(entry.getValue());
+		if (this.data != null && !this.data.isEmpty()) {
+			for (Map.Entry<String, String> entry : this.data.entrySet()) {
+				if (!first)
+					buffer.append('&');
+				else
+					first = false;
+				try {
+					buffer.append(URLEncoder.encode(entry.getKey(), Charsets.UTF_8.toString())).append('=')
+							.append(URLEncoder.encode(entry.getValue(), Charsets.UTF_8.toString()));
+				} catch (UnsupportedEncodingException e) {
+					buffer.append(entry.getKey()).append('=').append(entry.getValue());
+				}
 			}
 		}
 		if (buffer.charAt(buffer.length() - 1) == '?') {

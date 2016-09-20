@@ -171,8 +171,9 @@ public class Page {
 		return response() == null ? null : response().rawContent();
 	}
 	
+	@SuppressWarnings("unchecked")
 	public <T> T content() {
-		return response() == null ? null : response().content();
+		return (T) (response() == null ? null : response().content());
 	}
 
 	@Override
