@@ -3,7 +3,6 @@ package jcrawler.fetcher;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.commons.io.Charsets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
@@ -56,7 +55,7 @@ public class HttpFetcher implements Fetcher {
 				throw new FetchException("Not support method[" + request.method() + "].");
 			}
 			HttpUriRequest uriRequest = createHttpUriRequest(request);
-			ResponseHandler<Object> responseHandler = new CompositedResponseHandler(response);
+			ResponseHandler<Object> responseHandler = new CompositedResponseHandler(request, response);
 			this.httpClient.execute(uriRequest, responseHandler);
 		} catch (ClientProtocolException e) {
 			logger.error("Couldn't retrive response of url[{}].", request.url2str(), e);
@@ -66,34 +65,6 @@ public class HttpFetcher implements Fetcher {
 		}
 		return response;
 	}
-
-	/*public String fetch(Seed seed) throws FetchException {
-		String url = seed.getUrl();
-		int timeOut = config.getConnectionTimeOut() > 0 ? config.getConnectionTimeOut() : Request.DEFAULT_CONNECTION_TIMEOUT;
-		Map<String, String> headers = new HashMap<String, String>();
-		String userAgent = config.getUserAgent();
-		if (StringUtils.isNotBlank(userAgent)) {
-			headers.put(HttpHeaders.USER_AGENT, userAgent);
-		}
-		String referrer = config.getReferrer();
-		if (StringUtils.isNotBlank(referrer)) {
-			headers.put(HttpHeaders.REFERER, referrer);
-		}
-		
-		int retryTime = config.getRetryTime() <= 0 ? Request.DEFAULT_RETRY_TIMES : config.getRetryTime();
-		for (int i = 1; i <= retryTime; i++) {
-			try {
-				String contentCharset = config.getContentCharset();
-				String responseContent = httpOperator.get(HttpUriRequests.httpGet(url, timeOut, headers), ResponseHandlers.stringResponseHandler(contentCharset));
-				return responseContent;
-			} catch (ClientProtocolException e) {
-				throw new FetchException(e);
-			} catch (IOException e) {
-				logger.error("Couldn't retrive response of seed " + seed + " the " + i + " times.", e);
-			}
-		}
-		throw new FetchException("Couldn't retrive response of seed " + seed + " finally!");
-	}*/
 	
 	protected boolean supportMethod(Request request) {
 		Message.Method method = request.method();
@@ -163,11 +134,13 @@ public class HttpFetcher implements Fetcher {
 	}
 	
 	public static class CompositedResponseHandler extends ResponseHandlers.AbstractResponseHandler<Object> {
-
+		
+		private Request request;
 		private Response response;
 
-		public CompositedResponseHandler(Response response) {
+		public CompositedResponseHandler(Request request, Response response) {
 			super();
+			this.request = request;
 			this.response = response;
 		}
 
@@ -196,7 +169,7 @@ public class HttpFetcher implements Fetcher {
 			if (StringUtils.isBlank(charset)) {
 				charset = response.request().responseCharset();
 				if (StringUtils.isBlank(charset)) {
-					charset = Charsets.UTF_8.toString();
+					charset = "UTF-8";
 				}
 			}
 			response.charset(charset);
@@ -204,11 +177,11 @@ public class HttpFetcher implements Fetcher {
 			HttpEntity entity = httpResponse.getEntity();
 			if (entity == null) return null;
 			Object result = null;
-			if (response.isText()) {
+			if (request.requestText() || response.isText()) {
 				String content = EntityUtils.toString(entity, charset);
 				result = content;
 				response.rawContent(content).content(result);
-			} else if (response.isBinary()) {
+			} else if (request.requestBinary() || response.isBinary()) {
 				byte[] content = EntityUtils.toByteArray(entity);
 				result = content;
 				response.rawContent(null).content(result);

@@ -56,6 +56,16 @@ public class Request extends Message {
 	 */
 	private int prior;
 	
+	/**
+	 * 是否请求文本，与requestBinary互斥，默认请求文本
+	 */
+	private boolean requestText = true;
+	
+	/**
+	 * 是否请求图片，与requestText互斥，由请求者显式设置
+	 */
+	private boolean requestBinary;
+	
 	public static Request create() {
 		return new Request();
 	}
@@ -215,6 +225,26 @@ public class Request extends Message {
 		return this.prior;
 	}
 	
+	public Request requestText(boolean requestText) {
+		this.requestText = requestText;
+		this.requestBinary = !requestText;
+		return this;
+	}
+	
+	public boolean requestText() {
+		return this.requestText;
+	}
+	
+	public Request requestBinary(boolean requestBinary) {
+		this.requestBinary = requestBinary;
+		this.requestText = !requestBinary;
+		return this;
+	}
+	
+	public boolean requestBinary() {
+		return this.requestBinary;
+	}
+	
 	// ------------------------------ tool methods ------------------------------
 	
 	public Request normalizeParams() throws IOException {
@@ -346,7 +376,7 @@ public class Request extends Message {
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
-				.add("site", site.name())
+				.add("site", site == null ? "" : site.name())
 				.add("url", url)
 				.add("method", method)
 //				.add("headers", headers)

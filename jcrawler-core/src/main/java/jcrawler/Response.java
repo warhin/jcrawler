@@ -24,6 +24,7 @@ public class Response extends Message {
 	
 	public static final Pattern P_TEXT = Pattern.compile("\\s*text/\\w+.*");
 	public static final Pattern P_BINARY = Pattern.compile("\\s*application/octet-stream.*");
+	public static final Pattern P_IMAGE = Pattern.compile("\\s*image/.*");
 	public static final Pattern P_HTML = Pattern.compile("\\s*text/html.*");
 	public static final Pattern P_XML = Pattern.compile("\\s*(application|text)/\\w*\\+?xml.*");
 	public static final Pattern P_JSON = Pattern.compile("\\s*application/json.*");
@@ -160,14 +161,15 @@ public class Response extends Message {
     
 	public boolean isText() {
 		String contentType = this.contentType();
-		// 默认响应体类型是text
-		return StringUtils.isBlank(contentType) ? true
+		// 不保险的方式，以用户发起请求的request对象的设置为准
+		return StringUtils.isBlank(contentType) ? false
 				: P_TEXT.matcher(contentType).matches() || isHtml() || isXml() || isJson();
 	}
 
 	public boolean isBinary() {
 		String contentType = this.contentType();
-		return StringUtils.isBlank(contentType) ? false : P_BINARY.matcher(contentType).matches();
+		return StringUtils.isBlank(contentType) ? false
+				: P_BINARY.matcher(contentType).matches() || P_IMAGE.matcher(contentType).matches();
 	}
 
 	public boolean isHtml() {

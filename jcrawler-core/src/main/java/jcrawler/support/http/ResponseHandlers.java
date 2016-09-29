@@ -104,7 +104,11 @@ public class ResponseHandlers {
 		public String getContentType(HttpResponse response) {
 			String contentType = getHeader(response, HttpHeaders.CONTENT_TYPE);
 			if (StringUtils.isBlank(contentType)) {
-				contentType = response.getEntity().getContentType().getValue();
+				try {
+					contentType = response.getEntity().getContentType().getValue();
+				} catch (Exception e) {
+					contentType = null;
+				}
 			}
 			return contentType;
 		}
@@ -112,7 +116,11 @@ public class ResponseHandlers {
 		public String getContentEncoding(HttpResponse response) {
 			String contentEncoding = getHeader(response, HttpHeaders.CONTENT_ENCODING);
 			if (StringUtils.isBlank(contentEncoding)) {
-				contentEncoding = response.getEntity().getContentEncoding().getValue();
+				try {
+					contentEncoding = response.getEntity().getContentEncoding().getValue();
+				} catch (Exception e) {
+					contentEncoding = null;
+				}
 			}
 			return contentEncoding;
 		}
