@@ -338,7 +338,7 @@ public class JCrawler implements Runnable {
 		long idleMoment = System.currentTimeMillis();
 		int idleTimes = 0;
 		while (true) {
-			Threads.sleep(Envirenment.DEFAULT_MAINTHREAD_PAUSEMILLS, false);
+			Threads.sleep(Envirenment.DEFAULT_MAINTHREAD_PAUSEMILLS, true);
 			if (this.mode == Mode.CLIENT) {
 				if (requestHolder.size() > 0) {
 					idleTimes = 0;
@@ -517,7 +517,9 @@ public class JCrawler implements Runnable {
 			
 			try {
 				this.extractor.extract(page);
-				logger.info("extract page items success : {}", page.getPageItems());
+				if (!page.skipPageItems() && page.hasPageItems()) {
+					logger.info("extract page items success : {}", page.getPageItems());
+				}
 			} catch (Exception e) {
 				logger.error("Extract page error : ", e);
 			}

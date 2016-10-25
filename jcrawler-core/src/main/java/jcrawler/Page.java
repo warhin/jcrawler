@@ -71,7 +71,7 @@ public class Page {
 	}
 	
 	public boolean hasError() {
-		return e != null || content() == null;
+		return e != null || (content() == null && rawContent() == null);
 	}
 	
 	// ------------------------------ page items set and get ------------------------------
@@ -87,6 +87,10 @@ public class Page {
 	
 	public Map<String, Object> getPageItems() {
 		return this.pageItems.pull();
+	}
+	
+	public boolean hasPageItems() {
+		return !this.pageItems.pull().isEmpty();
 	}
 	
 	public Page skipPageItems(boolean skip) {

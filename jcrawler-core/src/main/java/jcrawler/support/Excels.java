@@ -4,17 +4,19 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFRow;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
@@ -23,86 +25,115 @@ import com.google.common.collect.Table;
 
 public class Excels {
 	
-	public static <T> Multimap<String, T> readMultimap(InputStream is, RowGetter<T> rowGetter) {
-		POIFSFileSystem fs = null;
-	    HSSFWorkbook wb = null;
-	    HSSFSheet sheet = null;
-	    HSSFRow row = null;
+	public static <T> Multimap<String, T> readMultimap(File file, RowGetter<T> rowGetter) {
+	    Workbook wb = null;
+	    Sheet sheet = null;
+	    Row row = null;
 	    
 	    try {
-            fs = new POIFSFileSystem(is);
+	    	POIFSFileSystem fs = new POIFSFileSystem(file);
             wb = new HSSFWorkbook(fs);
         } catch (IOException e) {
             e.printStackTrace();
             return null;
-        }
-	    
-	    Multimap<String, T> dataMap = HashMultimap.create();
-	    int numSheet = wb.getNumberOfSheets();
-	    for (int i = 0; i < numSheet; i++) {
-	    	sheet = wb.getSheetAt(i);
-	    	String sheetName = sheet.getSheetName();
-	    	int numRow = sheet.getLastRowNum();
-	    	for (int j = rowGetter.start(); j <= numRow; j++) {
-	    		try {
-	    			row = sheet.getRow(j);
-	    			dataMap.put(sheetName, rowGetter.getRow(row));
-	    		} catch (Exception e) {
-	    			e.printStackTrace();
-	    		}
-	    	}
+        } catch (Exception e) {
+	    	try {
+				wb = new XSSFWorkbook(file);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+				return null;
+			} catch (Exception e1) {
+				e1.printStackTrace();
+				return null;
+			}
 	    }
-	    return dataMap;
+	    
+		Multimap<String, T> dataMap = HashMultimap.create();
+		try {
+			int numSheet = wb.getNumberOfSheets();
+			for (int i = 0; i < numSheet; i++) {
+				sheet = wb.getSheetAt(i);
+				String sheetName = sheet.getSheetName();
+				int numRow = sheet.getLastRowNum();
+				int end = rowGetter.end();
+				for (int j = rowGetter.start(), size = Math.min(numRow, end); j <= size; j++) {
+					try {
+						row = sheet.getRow(j);
+						dataMap.put(sheetName, rowGetter.getRow(row));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		} finally {
+			IOUtils.closeQuietly(wb);
+		}
+		return dataMap;
 	}
 	
-	public static <T> Table<String, String, T> readTable(InputStream is,
+	public static <T> Table<String, String, T> readTable(File file,
 			int keyIndex, RowGetter<T> rowGetter) {
-		POIFSFileSystem fs = null;
-	    HSSFWorkbook wb = null;
-	    HSSFSheet sheet = null;
-	    HSSFRow row = null;
+	    Workbook wb = null;
+	    Sheet sheet = null;
+	    Row row = null;
 	    
 	    try {
-            fs = new POIFSFileSystem(is);
+	    	POIFSFileSystem fs = new POIFSFileSystem(file);
             wb = new HSSFWorkbook(fs);
         } catch (IOException e) {
             e.printStackTrace();
             return null;
-        }
+        } catch (Exception e) {
+	    	try {
+				wb = new XSSFWorkbook(file);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+				return null;
+			} catch (Exception e1) {
+				e1.printStackTrace();
+				return null;
+			}
+	    }
 	    
 	    Table<String, String, T> dataTable = HashBasedTable.create();
-	    int numSheet = wb.getNumberOfSheets();
-	    for (int i = 0; i < numSheet; i++) {
-	    	sheet = wb.getSheetAt(i);
-	    	String sheetName = sheet.getSheetName();
-	    	int numRow = sheet.getLastRowNum();
-	    	for (int j = rowGetter.start(); j <= numRow; j++) {
-	    		try {
-	    			row = sheet.getRow(j);
-	    			dataTable.put(sheetName, cellString(row.getCell(keyIndex)), rowGetter.getRow(row));
-	    		} catch (Exception e) {
-	    			e.printStackTrace();
+	    try {
+	    	int numSheet = wb.getNumberOfSheets();
+	    	for (int i = 0; i < numSheet; i++) {
+	    		sheet = wb.getSheetAt(i);
+	    		String sheetName = sheet.getSheetName();
+	    		int numRow = sheet.getLastRowNum();
+	    		int end = rowGetter.end();
+	    		for (int j = rowGetter.start(), size = Math.min(numRow, end); j <= size; j++) {
+	    			try {
+	    				row = sheet.getRow(j);
+	    				dataTable.put(sheetName, cellString(row.getCell(keyIndex)), rowGetter.getRow(row));
+	    			} catch (Exception e) {
+	    				e.printStackTrace();
+	    			}
 	    		}
 	    	}
+	    } finally {
+	    	IOUtils.closeQuietly(wb);
 	    }
 		return dataTable;
 	}
 	
 	public static <T> void writeMultimap(Multimap<String, T> dataMap, File target, RowSetter<T> rowSetter) {
-		HSSFWorkbook wb = new HSSFWorkbook();
-		HSSFSheet sheet = null;
-		HSSFRow row = null;
+//		HSSFWorkbook wb = new HSSFWorkbook();
+		XSSFWorkbook wb = new XSSFWorkbook();
+		Sheet sheet = null;
+		Row row = null;
 
 		Set<String> sheetNames = dataMap.keySet();
 		for (String sheetName : sheetNames) {
 			sheet = wb.createSheet(sheetName);
 			int numRow = 0;
 			row = sheet.createRow(numRow++);
-			rowSetter.setHead(row);
+			rowSetter.setHead(sheetName, row);
 			for (T object : dataMap.get(sheetName)) {
 				try {
 					row = sheet.createRow(numRow++);
-					rowSetter.setRow(row, object);
+					rowSetter.setRow(sheetName, row, object);
 				} catch (Exception e) {
 	    			e.printStackTrace();
 	    		}
@@ -119,14 +150,16 @@ public class Excels {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
+			IOUtils.closeQuietly(wb);
 			IOUtils.closeQuietly(out);
 		}
 	}
 	
 	public static <T> void writeTable(Table<String, String, T> dataTable, File target, RowSetter<T> rowSetter) {
-		HSSFWorkbook wb = new HSSFWorkbook();
-		HSSFSheet sheet = null;
-		HSSFRow row = null;
+//		HSSFWorkbook wb = new HSSFWorkbook();
+		XSSFWorkbook wb = new XSSFWorkbook();
+		Sheet sheet = null;
+		Row row = null;
 
 		Set<String> sheetNames = dataTable.rowKeySet();
 		for (String sheetName : sheetNames) {
@@ -136,7 +169,7 @@ public class Excels {
 			for (T object : records.values()) {
 				try {
 					row = sheet.createRow(numRow++);
-					rowSetter.setRow(row, object);
+					rowSetter.setRow(sheetName, row, object);
 				} catch (Exception e) {
 	    			e.printStackTrace();
 	    		}
@@ -153,11 +186,12 @@ public class Excels {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
+			IOUtils.closeQuietly(wb);
 			IOUtils.closeQuietly(out);
 		}
 	}
 	
-	public static String cellString(HSSFCell cell) {
+	public static String cellString(Cell cell) {
 		if (cell == null) return null;
 		String value = null;
 		switch (cell.getCellType()) {
@@ -189,7 +223,8 @@ public class Excels {
 	 */
 	public static interface RowGetter<T> {
 		int start();
-		T getRow(HSSFRow row);
+		int end();
+		T getRow(Row row);
 	}
 
 	/**
@@ -202,8 +237,8 @@ public class Excels {
 	 * @param <T>
 	 */
 	public static interface RowSetter<T> {
-		void setHead(HSSFRow row);
-		void setRow(HSSFRow row, T object);
+		void setHead(String sheetName, Row row);
+		void setRow(String sheetName, Row row, T object);
 	}
 
 }
