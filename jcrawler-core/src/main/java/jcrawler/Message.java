@@ -47,23 +47,23 @@ public class Message implements Serializable, Cloneable {
 	 */
 	protected Map<String, Object> ext;
 	
-	public Message site(Site site) {
+	public <T extends Message> T site(Site site) {
 		this.site = site;
-		return this;
+		return (T) this;
 	}
 	
 	public Site site() {
 		return this.site;
 	}
 	
-	public Message url(String url) {
+	public <T extends Message> T url(String url) {
 		this.url = checkUrl(url);
-		return this;
+		return (T) this;
 	}
 	
-	public Message url(URL url) {
+	public <T extends Message> T url(URL url) {
 		this.url = checkUrl(url);
-		return this;
+		return (T) this;
 	}
 	
 	public String url2str() {
@@ -94,9 +94,9 @@ public class Message implements Serializable, Cloneable {
 		return urlArg;
 	}
 	
-	public Message method(Method method) {
+	public <T extends Message> T method(Method method) {
 		this.method = method;
-		return this;
+		return (T) this;
 	}
 	
 	public Method method() {
@@ -113,23 +113,23 @@ public class Message implements Serializable, Cloneable {
 	
 	// ------------------------------ headers set and get ------------------------------
 	
-	public Message header(String name, String value) {
+	public <T extends Message> T header(String name, String value) {
 		if (StringUtils.isNotBlank(name)) {
 			if (this.hasHeader(name)) {
 				this.removeHeader(name);
 			}
 			this.headers.put(name, value);
 		}
-		return this;
+		return (T) this;
 	}
 	
-	public Message header(Map<String, String> headerMap) {
+	public <T extends Message> T header(Map<String, String> headerMap) {
 		if (headerMap != null && !headerMap.isEmpty()) {
 			for (Map.Entry<String, String> entry : headerMap.entrySet()) {
 				this.header(entry.getKey(), entry.getValue());
 			}
 		}
-		return this;
+		return (T) this;
 	}
 	
 	public Map<String, String> headers() {
@@ -147,7 +147,7 @@ public class Message implements Serializable, Cloneable {
 		return headerValue;
 	}
 	
-	public Message removeHeader(String name) {
+	public <T extends Message> T removeHeader(String name) {
 		if (this.headers.containsKey(name)) {
 			this.headers.remove(name);
 		} else {
@@ -156,7 +156,7 @@ public class Message implements Serializable, Cloneable {
 				this.headers.remove(existedHeader.getKey());
 			}
 		}
-		return this;
+		return (T) this;
 	}
 	
 	public boolean hasHeader(String name) {
@@ -179,20 +179,20 @@ public class Message implements Serializable, Cloneable {
 	
 	// ------------------------------ ext set and get ------------------------------
 	
-	public Message ext(String key, Object value) {
+	public <T extends Message, V> T ext(String key, V value) {
 		if (StringUtils.isNotBlank(key)) {
 			checkExt();
 			this.ext.put(key, value);
 		}
-		return this;
+		return (T) this;
 	}
 	
-	public Message ext(Map<String, Object> extMap) {
+	public <T extends Message, V> T ext(Map<String, V> extMap) {
 		if (extMap != null && !extMap.isEmpty()) {
 			checkExt();
 			this.ext.putAll(extMap);
 		}
-		return this;
+		return (T) this;
 	}
 	
 	public Map<String, Object> ext() {
@@ -203,11 +203,11 @@ public class Message implements Serializable, Cloneable {
 		return this.ext == null ? null : this.ext.get(key);
 	}
 	
-	public Message removeExt(String key) {
+	public <T extends Message> T removeExt(String key) {
 		if (ext != null) {
 			this.ext.remove(key);
 		}
-		return this;
+		return (T) this;
 	}
 	
 	private void checkExt() {
