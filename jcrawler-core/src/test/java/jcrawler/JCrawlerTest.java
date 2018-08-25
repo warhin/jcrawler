@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ddf.EscherColorRef.SysIndexSource;
 import org.junit.Test;
 
 import fisher.parser.JsoupParseContext;
@@ -14,6 +15,19 @@ import jcrawler.fetcher.Fetcher;
 import jcrawler.fetcher.HttpFetcherFactory;
 
 public class JCrawlerTest {
+  
+  @Test
+  public void testJD() {
+    String url = "https://list.jd.com/list.html?cat=1320,1583,1591&sort=sort_totalsales15_desc&trans=1&ev=exbrand_21204&JL=3_%E5%93%81%E7%89%8C_%E8%87%AA%E7%84%B6%E6%B4%BE#J_crumbsBar";
+    Fetcher fetcher = HttpFetcherFactory.getInstance().getDefaultHttpFetcher();
+    String html = fetcher.fetch(Request.create(url)).rawContent();
+    JsoupParseContext ctx = JsoupParseContext.from(html, url);
+    List<String> seeds = ctx.select("li.gl-item div.p-img a").attrs("abs:href");
+    for (String seed : seeds) {
+      System.out.println(seed);
+    }
+    System.out.println(seeds.size());
+  }
 
 	@Test
 	public void testJDCrawler() throws IOException {

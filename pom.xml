@@ -16,8 +16,8 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.test.skip>true</maven.test.skip>
 		<downloadSources>true</downloadSources>
-		<java_source_version>1.7</java_source_version>
-		<java_target_version>1.7</java_target_version>
+		<java_source_version>1.8</java_source_version>
+		<java_target_version>1.8</java_target_version>
 		<file_encoding>UTF-8</file_encoding>
 	</properties>
 
@@ -46,7 +46,7 @@
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>1.0.13</version>
+			<version>1.2.1</version>
 		</dependency>
 	</dependencies>
 
@@ -55,7 +55,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.1</version>
+				<version>3.5.1</version>
 				<configuration>
 					<source>${java_source_version}</source>
 					<target>${java_target_version}</target>

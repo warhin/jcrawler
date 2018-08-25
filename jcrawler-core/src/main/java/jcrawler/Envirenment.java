@@ -35,7 +35,7 @@ public class Envirenment {
 	/**
 	 * Exporter导出page线程的停顿时间
 	 */
-	public static final long DEFAULT_EXPORTER_PAUSEMILLS = 500;
+	public static final long DEFAULT_EXPORTER_PAUSEMILLS = 30;
 	
 	/**
 	 * main线程的停顿时间

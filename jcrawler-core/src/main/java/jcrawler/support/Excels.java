@@ -5,10 +5,13 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
@@ -211,6 +214,23 @@ public class Excels {
 		}
 		return value;
 	}
+	
+  public static String textValue(Object input, String dateFormat) {
+    if (input == null) {
+      return StringUtils.EMPTY;
+    }
+    if (input instanceof String) {
+      return StringUtils.trim((String) input);
+    }
+    if (input instanceof Date) {
+      if (StringUtils.isBlank(dateFormat)) {
+        dateFormat = "yyyy-MM-dd";
+      }
+      SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
+      return sdf.format((Date) input);
+    }
+    return StringUtils.trim(input.toString());
+  }
 	
 	/**
 	 * 读excel时的接口，将每行excel转换为数据对象T，指定起始行号和所有数据行row。
