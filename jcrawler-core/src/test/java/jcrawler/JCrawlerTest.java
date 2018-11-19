@@ -36,10 +36,9 @@ public class JCrawlerTest {
 				.referer("http://www.jd.com/")
 				.userAgent("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36")
 				.addStartRequest(request);
-		Fetcher fetcher = HttpFetcherFactory.getInstance().getHttpFetcher(jd);
 		Extractor extractor = new JDExtractor();
-		Exporter exporter = new FileExporter("D:\\doc\\jd");
-		JCrawler jdCrawler = new JCrawler().site(jd).fetcher(fetcher).extractor(extractor).exporter(exporter)
+		Exporter exporter = new FileExporter("/home/wy/workspacePP/jcrawler/jcrawler-core/data");
+		JCrawler jdCrawler = new JCrawler().site(jd).extractor(extractor).exporter(exporter)
 				.threads(2);
 		jdCrawler.run();
 	}

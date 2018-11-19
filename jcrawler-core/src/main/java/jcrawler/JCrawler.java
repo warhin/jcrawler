@@ -4,23 +4,24 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
-import jcrawler.executor.PageHolder;
-import jcrawler.executor.QueuePageHolder;
-import jcrawler.executor.QueueRequestHolder;
-import jcrawler.executor.RequestHolder;
+import jcrawler.executor.PageExporterWorker;
+import jcrawler.executor.RequestSuplier;
+import jcrawler.executor.RequestSuplierWorker;
+import jcrawler.executor.SpiderWorker;
 import jcrawler.exporter.Exporter;
 import jcrawler.extractor.Extractor;
 import jcrawler.fetcher.Fetcher;
-import jcrawler.fetcher.HttpFetcherFactory;
 import jcrawler.support.Threads;
 
 /**
@@ -37,10 +38,10 @@ public class JCrawler implements Runnable {
 	/**
 	 * request池，用来存储所有的request对象。
 	 */
-	private RequestHolder requestHolder;
+	private BlockingQueue<Request> requestQueue = new LinkedBlockingQueue<>();
 	
 	/**
-	 * requestHolder阀值，指定requestHolder中能容纳的最多request数量，超出该值时需控制线程速度。
+	 * requestQueue阀值，指定requestQueue中能容纳的最多request数量，超出该值时需控制线程速度。
 	 */
 	private int requestHolderThresholds;
 	
@@ -50,7 +51,7 @@ public class JCrawler implements Runnable {
 	private RequestSuplier requestSuplier;
 	
 	/**
-	 * suplier线程停顿时长，单位毫秒，指定suplier线程在泵request超出requestHolder指定阀值后停顿多久，在提供requestSuplier对象后才有效
+	 * suplier线程停顿时长，单位毫秒，指定suplier线程在泵request超出requestQueue指定阀值后停顿多久，在提供requestSuplier对象后才有效
 	 */
 	private long requestSuplierPauseMills;
 	
@@ -77,15 +78,15 @@ public class JCrawler implements Runnable {
 	/**
 	 * page池，用来存储所有的page对象。
 	 */
-	private PageHolder pageHolder;
+	private BlockingQueue<Page> pageQueue = new LinkedBlockingQueue<>();
 	
 	/**
-	 * pageHolder阀值，指定pageHolder中能容纳的最多page数量，超出该值时需控制线程速度。
+	 * pageQueue阀值，指定pageQueue中能容纳的最多page数量，超出该值时需控制线程速度。
 	 */
 	private int pageHolderThresholds;
 	
 	/**
-	 * Crawler线程停顿时长，单位毫秒，指定Crawler线程在page总量超出pageHolder指定阀值后停顿多久，以此控制Crawler线程吞吐率
+	 * Spider线程停顿时长，单位毫秒，指定Spider线程在page总量超出pageQueue指定阀值后停顿多久，以此控制Spider线程吞吐率
 	 */
 	private long pageSuplierPauseMills;
 	
@@ -106,11 +107,6 @@ public class JCrawler implements Runnable {
 	
 	public static JCrawler create() {
 		return new JCrawler();
-	}
-	
-	public JCrawler requestHolder(RequestHolder requestHolder) {
-		this.requestHolder = requestHolder;
-		return this;
 	}
 	
 	public JCrawler requestHolderThresholds(int requestHolderThresholds) {
@@ -152,11 +148,6 @@ public class JCrawler implements Runnable {
 	public JCrawler threads(int threads) {
 		Preconditions.checkArgument(threads > 1, "threads less than 2!");
 		this.threads = threads;
-		return this;
-	}
-	
-	public JCrawler pageHolder(PageHolder pageHolder) {
-		this.pageHolder = pageHolder;
 		return this;
 	}
 	
@@ -207,11 +198,6 @@ public class JCrawler implements Runnable {
 		if (exporters.isEmpty()) {
 			throw new JCrawlerException("The exporters is empty!");
 		}
-		// 可选设置项，未设置时可推荐一个默认值
-		if (this.requestHolder == null) {
-			this.requestHolder = new QueueRequestHolder();
-			logger.warn("Not specified the RequestHolder, use the default RequestHolder : {}", requestHolder);
-		}
 		if (this.fetcher == null) {
 			logger.warn("Not specified the Fetcher, use the default Fetcher with each site.");
 		}
@@ -220,10 +206,6 @@ public class JCrawler implements Runnable {
 			this.executor = Executors.newFixedThreadPool(threads);
 			logger.info("use the ExecutorService [{}] with [{}] threads", executor, threads);
 		}
-		if (pageHolder == null) {
-			this.pageHolder = new QueuePageHolder();
-			logger.warn("Not specified the PageHolder, use the default PageHolder : {}", pageHolder);
-		}
 		if (this.extractor == null) {
 			logger.warn("Not specified the Extractor, it's not necessary but you must ensure it.");
 		}
@@ -231,7 +213,12 @@ public class JCrawler implements Runnable {
 		for (Site siteToUse : this.sites) {
 			List<Request> startRequests = siteToUse.getStartRequests();
 			for (Request startRequest : startRequests) {
-				this.requestHolder.push(startRequest);
+				try {
+                  this.requestQueue.offer(startRequest, Envirenment.DEFAULT_REQUEST_PUSH_TIMEOUT, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                  // TODO Auto-generated catch block
+                  e.printStackTrace();
+                }
 			}
 		}
 		// init requestSuplier/fetcher/extractor
@@ -245,7 +232,9 @@ public class JCrawler implements Runnable {
 	}
 	
 	public JCrawler init(Object object) {
-		if (object == null) return this;
+		if (object == null) {
+		  return this;
+		}
 		if (object instanceof Initializable) {
 			Initializable i = (Initializable) object;
 			try {
@@ -275,7 +264,9 @@ public class JCrawler implements Runnable {
 	}
 	
 	public JCrawler close(Object object) {
-		if (object == null) return this;
+		if (object == null) {
+		  return this;
+		}
 		if (object instanceof Closeable) {
 			Closeable o = (Closeable) object;
 			try {
@@ -313,25 +304,25 @@ public class JCrawler implements Runnable {
 		if (this.requestSuplier != null) {
 			threadsUsed++;
 			int requestHolderThresholdsToUse = requestHolderThresholds <= 0 ? Envirenment.DEFAULT_REQUEST_THRESHOLDS : requestHolderThresholds;
-			long requestSuplierPauseMillsTouse = requestSuplierPauseMills <= 0 ? Envirenment.DEFAULT_SUPLIER_PAUSEMILLS : requestSuplierPauseMills;
-			requestSuplierWorker = new RequestSuplierWorker(requestSuplier, requestHolder,
-					requestHolderThresholdsToUse, requestSuplierPauseMillsTouse);
+			long requestSuplierPauseMillsToUse = requestSuplierPauseMills <= 0 ? Envirenment.DEFAULT_SUPLIER_PAUSEMILLS : requestSuplierPauseMills;
+			requestSuplierWorker = new RequestSuplierWorker(requestSuplier, requestQueue,
+					requestHolderThresholdsToUse, requestSuplierPauseMillsToUse);
 			this.executor.submit(requestSuplierWorker);
 		}
 		
 		// 启动爬取流程
-		List<Crawler> crawlers = new LinkedList<Crawler>();
+		List<SpiderWorker> crawlers = new LinkedList<SpiderWorker>();
 		int pageHolderThresholdsToUse = pageHolderThresholds <= 0 ? Envirenment.DEFAULT_PAGE_THRESHOLDS : pageHolderThresholds;
 		long pageSuplierPauseMillsToUse = pageSuplierPauseMills <= 0 ? Envirenment.DEFAULT_CRAWLER_PAUSEMILLS : pageSuplierPauseMills;
 		for (int i = 0, n = threads - threadsUsed; i < n; i++) {
-			Crawler crawler = new Crawler(requestHolder, pageHolder, fetcher, extractor, pageHolderThresholdsToUse, pageSuplierPauseMillsToUse);
+			SpiderWorker crawler = new SpiderWorker(requestQueue, pageQueue, fetcher, extractor, pageHolderThresholdsToUse, pageSuplierPauseMillsToUse);
 			crawlers.add(crawler);
 			this.executor.submit(crawler);
 		}
 		
 		// 对于exporters组件也需要一个单独的线程去运行它
 		long pageExporterPauseMillsToUse = pageExporterPauseMills <= 0 ? Envirenment.DEFAULT_EXPORTER_PAUSEMILLS : pageExporterPauseMills;
-		PageExporterWorker pageExporterWorker = new PageExporterWorker(pageHolder, exporters, pageExporterPauseMillsToUse);
+		PageExporterWorker pageExporterWorker = new PageExporterWorker(pageQueue, exporters, pageExporterPauseMillsToUse);
 		this.executor.submit(pageExporterWorker);
 		
 		// 当JCrawler处于SERVER模式时，主线程永不退出；当JCrawler处于CLIENT模式时，如果符合某种条件则所有线程退出
@@ -340,7 +331,7 @@ public class JCrawler implements Runnable {
 		while (true) {
 			Threads.sleep(Envirenment.DEFAULT_MAINTHREAD_PAUSEMILLS, true);
 			if (this.mode == Mode.CLIENT) {
-				if (requestHolder.size() > 0) {
+				if (!requestQueue.isEmpty()) {
 					idleTimes = 0;
 					idleMoment = System.currentTimeMillis();
 				} else {
@@ -351,14 +342,14 @@ public class JCrawler implements Runnable {
 						if (requestSuplierWorker != null) {
 							requestSuplierWorker.stop();
 						}
-						for (Crawler crawler : crawlers) {
+						for (SpiderWorker crawler : crawlers) {
 							crawler.stop();
 						}
 						if (pageExporterWorker != null) {
 							pageExporterWorker.stop();
 						}
-						logger.info("There are {} requests crawled and {} pages exported!", requestHolder.total(),
-								pageHolder.total());
+//						logger.info("There are {} requests crawled and {} pages exported!", requestQueue.total(),
+//								pageQueue.total());
 						break;
 					}
 				}
@@ -367,215 +358,6 @@ public class JCrawler implements Runnable {
 		
 		// 退出时清理所有Closeable
 		close();
-	}
-	
-	private static class StopableWorker {
-		private AtomicBoolean stopFlag = new AtomicBoolean(false);
-		public void stop() {
-			stopFlag.set(true);
-		}
-		public boolean isStop() {
-			return stopFlag.get();
-		}		
-	}
-	
-	public static class RequestSuplierWorker extends StopableWorker implements Runnable {
-		
-		private RequestSuplier requestSuplier;
-		private RequestHolder requestHolder;
-		private int requestHolderThresholds;
-		private long requestSuplierPauseMills;
-		
-		public RequestSuplierWorker(RequestSuplier requestSuplier, RequestHolder requestHolder, int requestHolderThresholds, long requestSuplierPauseMills) {
-			super();
-			this.requestSuplier = requestSuplier;
-			this.requestHolder = requestHolder;
-			this.requestHolderThresholds = requestHolderThresholds;
-			this.requestSuplierPauseMills = requestSuplierPauseMills;
-		}
-		
-		@Override
-		public void run() {
-			while (true) {
-				try {
-					// 被显式终止时，执行线程退出。
-					if (isStop()) break;
-					
-					// requestHolder中存储的待爬取request集合数量超出阀值后暂停request泵工作，休眠指定requestSuplierPauseMills时长后再判断是否继续。以此控制泵的速度和爬虫系统负载。
-					if (requestHolder.size() >= requestHolderThresholds) {
-						logger.warn(
-								"request suplier run faster than crawler[the requestHolder current size {} >= the requestHolder thresholds {}], please adjust the threads relationed!",
-								requestHolder.size(), requestHolderThresholds);
-						Threads.sleep(requestSuplierPauseMills, true);
-						continue;
-					}
-					
-					// requestSuplier没有后续任务了将轮询
-					if (!requestSuplier.hasNext()) {
-						continue;
-					}
-					
-					// request泵继续开工，导入一批新的待爬取request任务到requestHolder中。
-					List<Request> newRequests = requestSuplier.nextBatch();
-					if (newRequests != null && !newRequests.isEmpty()) {
-						logger.info("retrive next batch requests from requestSuplier : {}", newRequests.size());
-						for (Request newRequest : newRequests) {
-							requestHolder.push(newRequest);
-//							logger.info("push new request {} to requestHolder success : {}", newRequest.identify(), pushSuccess);
-						}
-					}
-				} catch (Exception e) {
-					logger.error("requestSuplier run error : ", e);
-				}
-			}
-		}
-		
-	}
-	
-	public static class Crawler extends StopableWorker implements Runnable {
-		
-		private RequestHolder requestHolder;
-		private PageHolder pageHolder;
-		private Fetcher fetcher;
-		private Extractor extractor;
-		private int pageHolderThresholds;
-		private long pageSuplierPauseMills;
-		
-		public Crawler(RequestHolder requestHolder, PageHolder pageHolder, Fetcher fetcher,
-				Extractor extractor, int pageHolderThresholds, long pageSuplierPauseMills) {
-			super();
-			this.requestHolder = requestHolder;
-			this.pageHolder = pageHolder;
-			this.fetcher = fetcher;
-			this.extractor = extractor;
-			this.pageHolderThresholds = pageHolderThresholds;
-			this.pageSuplierPauseMills = pageSuplierPauseMills;
-		}
-		
-		@Override
-		public void run() {
-			while (true) {
-				// 被显式终止时，执行线程退出。
-				if (isStop()) break;
-				
-				// pageHolder中存储的待导出page集合数量超出阀值后暂停crawler工作，休眠指定pageSuplierPauseMills时长后再判断是否继续。以此控制爬虫的速度和爬虫系统负载。
-				if (pageHolder.size() >= pageHolderThresholds) {
-					logger.warn(
-							"crawler run faster than page exporter[the pageHolder current size {} >= the pageHolder thresholds {}], please adjust the threads relationed!",
-							pageHolder.size(), pageHolderThresholds);
-					Threads.sleep(pageSuplierPauseMills, true);
-					continue;
-				}
-				
-				// 从RequestHolder中取出一个待爬取的Request对象，如果未取到，循环该过程直到取到为止。
-				Request request = requestHolder.pull();
-				if (request == null || !request.validate()) {
-					continue;
-				}
-				
-				// 使用指定的fetcher对象下载该request对象，得到一个page对象，如果下载的page对象有误，判断是否需要重试
-				Page page = fetch(request);
-				if (page == null || page.hasError()) {
-					continue;
-				}
-				
-				// 如果下载的page对象无误，根据指定的extractor对象(如果用户指定了)处理page
-				extract(page);
-				if (page.skipPageItems()) {
-					continue;
-				}
-				
-				// 将处理后的page对象存入PageHolder，待下游线程进一步处理
-				pageHolder.push(page);
-//				logger.info("push new page {} to pageHolder success : {}", page, pushSuccess);
-				
-				// 一次爬取结束后根据site的sleepTime配置决定是否需要暂停一段时间，以控制爬取频率：为0时表示不休息，尽可能努力抓取；值越大表明停歇时间越长，可以防反爬虫策略
-				long sleepTime = page.site() == null ? 0 : page.site().sleepTime();
-				Threads.sleep(sleepTime, true);
-			}
-		}
-		
-		private Page fetch(Request request) {
-			Page page = Page.create().request(request);
-			try {
-				Fetcher fetcherToUse = fetcher;
-				if (fetcherToUse == null) {
-					fetcherToUse = HttpFetcherFactory.getInstance().getHttpFetcher(request.site());
-				}
-				Response response = fetcherToUse.fetch(request);
-				page.response(response);
-				logger.info("fetch response from request success : the request is {}, the response is {}.", request, response);
-			} catch (Exception e) {
-				logger.error("Fetch response error : ", e);
-				page.exception(e);
-			}
-			return page;
-		}
-		
-		private void extract(Page page) {
-			if (extractor == null) return;
-			
-			try {
-				this.extractor.extract(page);
-				if (!page.skipPageItems() && page.hasPageItems()) {
-					logger.info("extract page items success : {}", page.getPageItems());
-				}
-			} catch (Exception e) {
-				logger.error("Extract page error : ", e);
-			}
-			
-			if (page.skipPageLinks()) return;
-			List<Request> newRequests = page.getPageLinks();
-			if (newRequests != null && !newRequests.isEmpty()) {
-				logger.info("retrive next batch requests inner this page : {}", newRequests.size());
-				for (Request newRequest : newRequests) {
-					this.requestHolder.push(newRequest);
-//					logger.info("push new request [{}] to requestHolder success : {}", newRequest.identify(), pushSuccess);
-				}
-			}
-		}
-		
-	}
-	
-	public static class PageExporterWorker extends StopableWorker implements Runnable {
-		
-		private PageHolder pageHolder;
-		private List<Exporter> exporters;
-		private long pageExporterPauseMills;
-		
-		public PageExporterWorker(PageHolder pageHolder, List<Exporter> exporters, long pageExporterPauseMills) {
-			super();
-			this.pageHolder = pageHolder;
-			this.exporters = exporters;
-			this.pageExporterPauseMills = pageExporterPauseMills;
-		}
-		
-		@Override
-		public void run() {
-			while (true) {
-				// 被显式终止时，执行线程退出。
-				if (isStop()) break;
-				
-				// 从pageHolder中取出一个page对象，如果经过指定时间后未取到page对象，循环该过程直到取到为止。
-				Page page = pageHolder.pull();
-				// 只有在当前线程本次循环中未取到page对象时才考虑要不要休眠暂停：pageExporterPauseMills还得显式设置过大于0，以此防止exporter线程空转浪费资源
-				if (page == null) {
-					Threads.sleep(pageExporterPauseMills, true);
-					continue;
-				}
-				
-				// 对于取到的page对象，依次通过每一个Exporter执行其export过程。
-				for (Exporter exporter : exporters) {
-					try {
-						exporter.export(page);
-						logger.info("exporter {} export page {} success.", exporter, page);
-					} catch (Exception e) {
-						logger.error("Export page error : ", e);
-					}
-				}
-			}
-		}
-		
 	}
 	
 	private Mode mode = Mode.CLIENT;

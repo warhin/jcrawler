@@ -1,6 +1,8 @@
-package jcrawler;
+package jcrawler.executor;
 
 import java.util.List;
+
+import jcrawler.Request;
 
 /**
  * Request供应器，也即request泵，从外部环境中泵入需要爬取的request集合。
