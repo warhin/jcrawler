@@ -2,9 +2,10 @@ package jcrawler.extractor;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
@@ -14,7 +15,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
 
-import fisher.parser.support.StringMatcher;
 import jcrawler.Page;
 import jcrawler.PageLinks;
 
@@ -46,11 +46,17 @@ public class LinkExtractors {
 		@Override
 		public Set<String> extractUrls(Page page) {
 			String url = page.request().url2str();
-			String content = page.content() == null ? null : page.content().toString();
-			if (StringUtils.isBlank(content)) return null;
+			String content = (page.content() == null) ? null : page.content().toString();
+			if (StringUtils.isBlank(content)) {
+				return null;
+			}
 			// extract urls by pattern expression
-			String[] links = StringMatcher.from(content).pattern(P_URL).toStrings();
-			return (links == null || links.length == 0) ? null : resolveLinks(url, Arrays.asList(links));
+			List<String> links = new ArrayList<>();
+			Matcher m = P_URL.matcher(content);
+			while (m.find()) {
+				links.add(m.group());
+			}
+			return links.isEmpty() ? null : resolveLinks(url, links);
 		}
 		
 		/**
