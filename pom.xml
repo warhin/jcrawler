@@ -12,6 +12,7 @@
 	<modules>
 		<module>jcrawler-core</module>
 		<module>jcrawler-parser</module>
+		<module>jcrawler-sample</module>
 	</modules>
 
 	<properties>
