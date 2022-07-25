@@ -1,28 +1,44 @@
 <?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>jcrawler</groupId>
-    <artifactId>jcrawler-parent</artifactId>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>jcrawler</groupId>
+        <artifactId>jcrawler-parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>jcrawler-sample</artifactId>
     <version>1.0-SNAPSHOT</version>
-  </parent>
+    <name>jcrawler-sample</name>
+    <url>http://maven.apache.org</url>
 
-  <artifactId>jcrawler-sample</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  <name>jcrawler-sample</name>
-  <url>http://maven.apache.org</url>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>1.8</java.version>
+        <encoding>UTF-8</encoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <lombok.version>1.18.0</lombok.version>
+    </properties>
 
-  <dependencies>
-	<dependency>
-		<groupId>jcrawler</groupId>
-		<artifactId>jcrawler-core</artifactId>
-		<version>1.0-SNAPSHOT</version>
-	</dependency>
-	<dependency>
-		<groupId>jcrawler</groupId>
-		<artifactId>jcrawler-parser</artifactId>
-		<version>1.0-SNAPSHOT</version>
-	</dependency>
-  </dependencies>
+    <dependencies>
+        <dependency>
+            <groupId>jcrawler</groupId>
+            <artifactId>jcrawler-core</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>jcrawler</groupId>
+            <artifactId>jcrawler-parser</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+        </dependency>
+    </dependencies>
 </project>
